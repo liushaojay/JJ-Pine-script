@@ -1,0 +1,129 @@
+//@version=5
+indicator(title="JJ EMA + SMA + BB + Keltner + SAR + HMA", overlay=true)
+
+// 设置选项
+z = input.bool(defval=true, title="EMA", group="Settings")
+W = input.bool(defval=true, title="SMA", group="Settings")
+sr = input.bool(defval=true, title="SAR", group="Settings")
+y = input.bool(defval=true, title="布林带", group="Settings")
+m = input.bool(defval=true, title="Keltner", group="Settings")
+hma = input.bool(defval=true, title="HMA", group="Settings")
+threeinone = input.bool(defval=true, title="3合1", group="Settings")
+
+Squeeze = input(false)
+
+// EMA 均线设置
+len1 = input(defval=13, title="ema1", group="EMA")
+len2 = input(defval=34, title="ema2", group="EMA")
+len3 = input(defval=55, title="ema3", group="EMA")
+len4 = input(defval=89, title="ema4", group="EMA")
+len5 = input(defval=144, title="ema5", group="EMA")
+len6 = input(defval=200, title="ema6", group="EMA")
+
+ema1 = ta.ema(close, len1)
+ema2 = ta.ema(close, len2)
+ema3 = ta.ema(close, len3)
+ema4 = ta.ema(close, len4)
+ema5 = ta.ema(close, len5)
+ema6 = ta.ema(close, len6)
+
+// 绘制 EMA 均线
+plot(z ? ema1 : na, title="ema1", color=color.red)
+plot(z ? ema2 : na, title="ema2", color=color.rgb(175, 160, 76))
+plot(z ? ema3 : na, title="ema3", color=color.rgb(68, 243, 33))
+plot(z ? ema4 : na, title="ema4", color=color.blue)
+plot(z ? ema5 : na, title="ema5", color=color.rgb(54, 33, 243))
+plot(z ? ema6 : na, title="ema6", color=color.rgb(243, 33, 243))
+
+// SMA 均线设置
+len7 = input(defval=13, title="sma1", group="SMA")
+len8 = input(defval=34, title="sma2", group="SMA")
+len9 = input(defval=55, title="sma3", group="SMA")
+len10 = input(defval=89, title="sma4", group="SMA")
+len11 = input(defval=144, title="sma5", group="SMA")
+len12 = input(defval=200, title="sma6", group="SMA")
+
+sma7 = ta.sma(close, len7)
+sma8 = ta.sma(close, len8)
+sma9 = ta.sma(close, len9)
+sma10 = ta.sma(close, len10)
+sma11 = ta.sma(close, len11)
+sma12 = ta.sma(close, len12)
+
+// 绘制 SMA 均线
+plot(W ? sma7 : na, title="sma1", color=color.red)
+plot(W ? sma8 : na, title="sma2", color=color.rgb(175, 160, 76))
+plot(W ? sma9 : na, title="sma3", color=color.rgb(68, 243, 33))
+plot(W ? sma10 : na, title="sma4", color=color.blue)
+plot(W ? sma11 : na, title="sma5", color=color.rgb(54, 33, 243))
+plot(W ? sma12 : na, title="sma6", color=color.rgb(243, 33, 243))
+
+// 布林带设置
+BB = input.int(20, minval=1, group="布林带")
+mult = input.float(2.0, minval=0.001, maxval=50, title="StdDev", group="布林带")
+basis = ta.sma(close, BB)
+dev = mult * ta.stdev(close, BB)
+upper = basis + dev
+lower = basis - dev
+
+// 绘制布林带
+plot(y ? basis : na, "Basis", color=color.white)
+plot(y ? upper : na, "Upper", color=color.red)
+plot(y ? lower : na, "Lower", color=color.green)
+
+// 肯特纳通道设置
+lengthk = input.int(20, minval=1, group="Keltner")
+multk = input(2.0, "Multiplier Keltner", group="Keltner")
+atrlength = input(10, "ATR Length Keltner", group="Keltner")
+BandsStyle = input.string("Average True Range", options=["Average True Range", "True Range", "Range"], title="Bands Style", group="Keltner")
+
+ma = ta.ema(close, lengthk)
+rangema = BandsStyle == "True Range" ? ta.tr(true) : ta.atr(atrlength)
+upperk = ma + rangema * multk
+lowerk = ma - rangema * multk
+
+// 绘制肯特纳通道
+plot(m ? upperk : na, "UpperKeltner", color=color.white)
+plot(m ? ma : na, "BasisKeltner", color=color.white)
+plot(m ? lowerk : na, "LowerKeltner", color=color.white)
+
+// 布林带与肯特纳通道 Squeeze 背景色
+KBsqueeze = upperk > upper
+bgcolor(Squeeze and KBsqueeze ? color.new(color.black, 50) : na, title="Squeeze")
+
+// SAR 设置
+start = input(0.02)
+increment = input(0.02)
+maximum = input(0.2, "Max Value")
+out = ta.sar(start, increment, maximum)
+plot(sr ? out : na, "ParabolicSAR", style=plot.style_cross, color=color.white)
+
+// HMA 设置
+lengthhma = input.int(144, minval=1, title="HMA Length")
+hmaVal = ta.wma(2 * ta.wma(close, lengthhma / 2) - ta.wma(close, lengthhma), math.floor(math.sqrt(lengthhma)))
+plot(hma ? hmaVal : na, "HMA", color=color.rgb(93, 73, 167))
+
+// 3合1 策略
+periodK = input.int(9, title="%K Length", minval=1)
+smoothK = input.int(3, title="%K Smoothing", minval=1)
+periodD = input.int(3, title="%D Smoothing", minval=1)
+k = ta.sma(ta.stoch(close, high, low, periodK), smoothK)
+d = ta.sma(k, periodD)
+
+rsiLength1 = input.int(12, minval=1, title="RSI1 Length", group="RSI")
+rsiLength2 = input.int(6, minval=1, title="RSI2 Length", group="RSI")
+
+rsi1 = ta.rsi(close, rsiLength1)
+rsi2 = ta.rsi(close, rsiLength2)
+
+kdbuy = ta.crossover(k, d)
+kdsell = ta.crossunder(k, d)
+rsibuy = ta.crossover(rsi2, rsi1)
+rsisell = ta.crossunder(rsi2, rsi1)
+
+buy = kdbuy and rsibuy
+sell = kdsell and rsisell
+
+// 绘制买入卖出信号
+plotshape(threeinone ? buy : na, style=shape.labelup, color=color.green, location=location.belowbar, size=size.tiny)
+plotshape(threeinone ? sell : na, style=shape.labeldown, color=color.red, location=location.abovebar, size=size.tiny)
