@@ -24,3 +24,4 @@ sellk = high < high[1] and low < low[1] and high[1] > high[2] and low[1] > low[2
 // Plotting
 plotshape(buyk, style=shape.labelup, color=color.green, location=location.belowbar, size=size.tiny)
 plotshape(sellk, style=shape.labeldown, color=color.red, location=location.abovebar, size=size.tiny)
+
