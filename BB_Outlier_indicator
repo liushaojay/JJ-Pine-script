@@ -1,0 +1,51 @@
+//@version=5
+indicator(shorttitle='JJ Outlier', title='JJ Outlier', overlay=true)
+
+// Inputs
+length = input(14, title="Length")
+src = input(close, "Source")
+BB = 20
+mult = input.float(2.0, minval=0.001, maxval=50, step=0.1, title="StdDev", group="Bollinger Bands")
+mult2 = input.float(3.0, minval=0.001, maxval=50, step=0.1, title="StdDev (2)", group="Bollinger Bands")
+len6 = input(200, title="EMA Length", group="EMA")
+
+// Williams %R
+percentR = 100 * (src - ta.highest(length)) / (ta.highest(length) - ta.lowest(length))
+obPlot = -20
+osPlot = -80
+
+// Bollinger Bands
+basis = ta.sma(src, BB)
+dev = mult * ta.stdev(src, BB)
+upper = basis + dev
+lower = basis - dev
+dev2 = mult2 * ta.stdev(src, BB)
+upper2 = basis + dev2
+lower2 = basis - dev2
+
+// Buy/Sell conditions
+buy1 = close < lower and close > lower2 and high < lower and high > lower2  
+sell1 = close > upper and close < upper2 and low > upper and low < upper2  
+buy2 = low[1] < lower2 and open[1] > lower and close > lower and low > lower2
+
+// EMA and trend determination
+ema6 = ta.ema(close, len6)
+long = close < basis and basis < ema6
+short = close > basis and basis > ema6
+
+// Normalized position within Bollinger Bands
+bbr = (src - lower) / (upper - lower)
+buy = ta.crossover(bbr, -0.2) and long
+sell = ta.crossunder(bbr, 1.2) and short
+
+// Plotting
+plot(basis, "Basis", color=color.white)
+plot(upper, "1 Std Dev UP", color=color.red)
+plot(lower, "1 Std Dev LOW", color=color.green)
+plot(upper2, "2 Std Dev UP", color=color.red)
+plot(lower2, "2 Std Dev LOW", color=color.green)
+
+plotshape(buy1, style=shape.labelup, color=color.green, location=location.belowbar, size=size.tiny)
+plotshape(sell1, style=shape.labeldown, color=color.red, location=location.abovebar, size=size.tiny)
+plotshape(buy, style=shape.labelup, color=color.rgb(76, 175, 79, 50), location=location.belowbar, size=size.tiny)
+plotshape(sell, style=shape.labeldown, color=color.rgb(255, 82, 82, 50), location=location.abovebar, size=size.tiny)
