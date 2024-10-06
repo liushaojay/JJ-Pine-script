@@ -1,0 +1,33 @@
+//@version=5
+indicator("JJ 凱斯特納移動平均線(GE)", overlay=true)
+
+// 输入参数
+n = input(20, title="短期均線周期")
+nn = input(80, title="長期均線周期")
+l = input(40, title="突破天數")
+
+// 短期均线
+a = ta.sma(close, n)
+b = ta.sma(high, n)
+c = ta.sma(low, n)
+
+// 长期均线
+aa = ta.sma(close, nn)
+bb = ta.sma(high, nn)
+cc = ta.sma(low, nn)
+
+// 突破条件
+upper = ta.highest(l)
+buy20 = close > upper[1]
+
+// 绘制买入信号
+plotshape(buy20, style=shape.labelup, color=color.green, location=location.belowbar, size=size.tiny)
+
+// 绘制均线
+plot(a, color=color.black, title="短期均線 (Close)")
+plot(b, color=color.black, title="短期均線 (High)")
+plot(c, color=color.black, title="短期均線 (Low)")
+
+plot(aa, color=color.black, title="長期均線 (Close)")
+plot(bb, color=color.black, title="長期均線 (High)")
+plot(cc, color=color.black, title="長期均線 (Low)")
