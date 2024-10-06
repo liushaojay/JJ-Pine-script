@@ -1,0 +1,17 @@
+//@version=5
+indicator("JJ BIAS", overlay = false, format=format.price)
+// format可調控精準度
+
+x = input(20, title = "均線")
+
+sma1 = ta.sma(close,x)
+average = ta.sma(hlcc4, x)
+// 乖離率＝ ( 收盤價－平均值 ) / 平均值 * 100 %
+BIAS = ((close - average)/average)*100
+
+UpperBand = hline(2, "bias Upper Band", color=#787B86)
+LowerBand = hline(-2, "bias Lower Band", color=#787B86)
+UpperBand2 = hline(1, "bias Upper Band2", color=#787B86)
+LowerBand2 = hline(-1, "bias Lower Band2", color=#787B86)
+
+plot(BIAS, color = color.white)
