@@ -1,0 +1,72 @@
+//@version=5
+indicator(title='JJ MACD Divergence', timeframe='')
+
+// Input parameters
+fast_length = input(12, 'Fast Length')
+slow_length = input(26, 'Slow Length')
+src = input(close, 'Source')
+signal_length = input.int(9, 'Signal Smoothing', minval=1, maxval=50)
+sma_type = input.string('EMA', 'Oscillator MA Type', options=['SMA', 'EMA'])
+signal_ma_type = input.string('EMA', 'Signal Line MA Type', options=['SMA', 'EMA'])
+
+// Plot colors
+col_macd = color.new(#2962FF, 0)
+col_signal = color.new(#FF6D00, 0)
+col_grow_above = color.new(#26A69A, 0)
+col_fall_above = color.new(#B2DFDB, 0)
+col_grow_below = color.new(#FFCDD2, 0)
+col_fall_below = color.new(#FF5252, 0)
+
+// MACD calculation
+fast_ma = sma_type == 'SMA' ? ta.sma(src, fast_length) : ta.ema(src, fast_length)
+slow_ma = sma_type == 'SMA' ? ta.sma(src, slow_length) : ta.ema(src, slow_length)
+macd = fast_ma - slow_ma
+signal = signal_ma_type == 'SMA' ? ta.sma(macd, signal_length) : ta.ema(macd, signal_length)
+hist = macd - signal
+
+// Plotting MACD and histogram
+plot(hist, title='Histogram', style=plot.style_columns, color=hist >= 0 ? (hist[1] < hist ? col_grow_above : col_fall_above) : (hist[1] < hist ? col_grow_below : col_fall_below))
+plot(macd, title='MACD', color=col_macd)
+plot(signal, title='Signal', color=col_signal)
+
+// Divergence detection settings
+lbR = input(5, 'Right Lookback')
+lbL = input(5, 'Left Lookback')
+range_upper = input(60, 'Max Lookback Range')
+range_lower = input(5, 'Min Lookback Range')
+plot_bull = input(true, 'Plot Bullish')
+plot_bear = input(true, 'Plot Bearish')
+
+// Colors for divergence
+bear_color = color.red
+bull_color = color.green
+none_color = color.new(color.white, 100)
+text_color = color.white
+
+// Pivot detection
+pl_found = na(ta.pivotlow(hist, lbL, lbR)) ? false : true
+ph_found = na(ta.pivothigh(hist, lbL, lbR)) ? false : true
+
+_inRange(cond) =>
+    bars = ta.barssince(cond)
+    range_lower <= bars and bars <= range_upper
+
+// Regular Bullish Divergence
+osc_hl = hist[lbR] > ta.valuewhen(pl_found, hist[lbR], 1) and _inRange(pl_found[1]) and hist[lbR] < 0
+price_ll = low[lbR] < ta.valuewhen(pl_found, low[lbR], 1)
+bull_cond = plot_bull and price_ll and osc_hl and pl_found
+
+plot(pl_found ? hist[lbR] : na, offset=-lbR, title='Bull', linewidth=2, color=bull_cond ? bull_color : none_color)
+plotshape(bull_cond ? hist[lbR] : na, offset=-lbR, title='Bullish Label', text='Bull', style=shape.labelup, location=location.absolute, color=color.new(bull_color, 0), textcolor=color.new(text_color, 0))
+
+// Regular Bearish Divergence
+osc_lh = hist[lbR] < ta.valuewhen(ph_found, hist[lbR], 1) and _inRange(ph_found[1]) and hist[lbR] > 0
+price_hh = high[lbR] > ta.valuewhen(ph_found, high[lbR], 1)
+bear_cond = plot_bear and price_hh and osc_lh and ph_found
+
+plot(ph_found ? hist[lbR] : na, offset=-lbR, title='Bear', linewidth=2, color=bear_cond ? bear_color : none_color)
+plotshape(bear_cond ? hist[lbR] : na, offset=-lbR, title='Bearish Label', text='Bear', style=shape.labeldown, location=location.absolute, color=color.new(bear_color, 0), textcolor=color.new(text_color, 0))
+
+// Alert conditions
+alertcondition(bull_cond, title='Bull', message='Regular Bull Div {{ticker}} XXmin')
+alertcondition(bear_cond, title='Bear', message='Regular Bear Div {{ticker}} XXmin')
